@@ -1,0 +1,9 @@
+pdfplumber 
+pandas
+pytesseract 
+pdf2image 
+pillow 
+opencv-python 
+pandas 
+regex
+
