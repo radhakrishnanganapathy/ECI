@@ -6,4 +6,8 @@ pillow
 opencv-python 
 pandas 
 regex
-
+streamlit
+psycopg2-binary
+sqlalchemy
+passlib
+pyarrow
