@@ -33,6 +33,12 @@ A premium Streamlit application for tracking election statistics, party alliance
     streamlit run app.py
     ```
 
+## Managing User Roles
+For security, all new signups default to the `user` role. To promote a user to `admin`, use the backend script:
+```bash
+python update_role.py <username> admin
+```
+
 ## Default Admin Credentials
 - **Username**: `admin`
 - **Password**: `admin123`

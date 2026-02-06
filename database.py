@@ -7,10 +7,10 @@ from passlib.context import CryptContext
 # Database Configuration
 # You should set these environment variables or change them here
 DB_USER = os.getenv("DB_USER", "postgres")
-DB_PASSWORD = os.getenv("DB_PASSWORD", "postgres")
+DB_PASSWORD = os.getenv("DB_PASSWORD", "redblox009")
 DB_HOST = os.getenv("DB_HOST", "localhost")
 DB_PORT = os.getenv("DB_PORT", "5432")
-DB_NAME = os.getenv("DB_NAME", "eci_db")
+DB_NAME = os.getenv("DB_NAME", "election2026")
 
 DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
@@ -32,6 +32,10 @@ class Alliance(Base):
     __tablename__ = "alliances"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, unique=True, index=True)
+    primary_party = Column(String)
+    symbol = Column(String)
+    leader = Column(String)
+    seats_contested = Column(Integer)
     description = Column(Text)
     logo_url = Column(String)
     parties = relationship("Party", back_populates="alliance")

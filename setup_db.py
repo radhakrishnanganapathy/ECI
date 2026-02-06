@@ -17,8 +17,22 @@ def populate_mock_data():
     db.add(admin)
 
     # Create Alliances
-    alliance1 = Alliance(name="National Democratic Alliance", description="A center-right to right-right political alliance.")
-    alliance2 = Alliance(name="United Progressive Alliance", description="A center-left political alliance.")
+    alliance1 = Alliance(
+        name="National Democratic Alliance", 
+        primary_party="BJP",
+        symbol="🪷",
+        leader="Narendra Modi",
+        seats_contested=543,
+        description="A center-right to right-right political alliance."
+    )
+    alliance2 = Alliance(
+        name="United Progressive Alliance", 
+        primary_party="INC",
+        symbol="🖐️",
+        leader="Mallikarjun Kharge",
+        seats_contested=543,
+        description="A center-left political alliance."
+    )
     db.add_all([alliance1, alliance2])
     db.commit()
 

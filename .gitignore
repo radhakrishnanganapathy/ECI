@@ -2,3 +2,4 @@ venv/
 images/
 output.csv
 2026-EROLLGEN-S22-73-SIR-DraftRoll-Revision1-TAM-291-WI.pdf
+.env

@@ -62,37 +62,6 @@ except Exception as e:
 if 'user' not in st.session_state:
     st.session_state.user = None
 
-def login():
-    st.sidebar.title("Login")
-    username = st.sidebar.text_input("Username")
-    password = st.sidebar.text_input("Password", type="password")
-    
-    if st.sidebar.button("Login"):
-        db = next(get_db())
-        user = db.query(User).filter(User.username == username).first()
-        if user and verify_password(password, user.password_hash):
-            st.session_state.user = user
-            st.rerun()
-        else:
-            st.sidebar.error("Invalid username or password")
-
-def signup():
-    st.sidebar.title("Sign Up")
-    new_user = st.sidebar.text_input("New Username")
-    new_pass = st.sidebar.text_input("New Password", type="password")
-    role = st.sidebar.selectbox("Role", ["user", "admin"])
-    
-    if st.sidebar.button("Sign Up"):
-        db = next(get_db())
-        existing = db.query(User).filter(User.username == new_user).first()
-        if existing:
-            st.sidebar.error("Username already exists")
-        else:
-            user = User(username=new_user, password_hash=hash_password(new_pass), role=role)
-            db.add(user)
-            db.commit()
-            st.sidebar.success("Account created! You can now login.")
-
 def logout():
     st.session_state.user = None
     st.rerun()
@@ -129,7 +98,6 @@ if st.session_state.user is None:
         st.subheader("Join the Platform")
         s_username = st.text_input("Username", key="signup_user")
         s_password = st.text_input("Password", type="password", key="signup_pass")
-        s_role = st.selectbox("I am a...", ["User", "Admin"], key="signup_role")
         
         if st.button("Register"):
             db = next(get_db())
@@ -137,7 +105,7 @@ if st.session_state.user is None:
             if existing:
                 st.error("Username already exists")
             else:
-                user = User(username=s_username, password_hash=hash_password(s_password), role=s_role.lower())
+                user = User(username=s_username, password_hash=hash_password(s_password), role="user")
                 db.add(user)
                 db.commit()
                 st.success("Account created! Switch to Login tab to enter.")
@@ -152,7 +120,7 @@ else:
     st.sidebar.divider()
     
     # Navigation
-    menu = ["Dashboard", "Parties & Alliances", "Candidates", "Election Stats"]
+    menu = ["Dashboard", "Alliances", "Candidates", "Election Stats"]
     if user['role'] == 'admin':
         menu.append("Admin Panel")
         
@@ -183,24 +151,85 @@ else:
         })
         st.line_chart(chart_data.set_index('Year'))
 
-    elif choice == "Parties & Alliances":
-        st.title("🤝 Alliances and Parties")
-        db = next(get_db())
-        alliances = db.query(Alliance).all()
+    elif choice == "Alliances":
+        header_col1, header_col2 = st.columns([5, 1])
+        with header_col1:
+            st.title("🤝 Alliances")
         
-        for alliance in alliances:
-            with st.expander(f"Alliance: {alliance.name}"):
-                st.write(alliance.description)
+        db = next(get_db())
+        
+        # Admin Add (+) Button
+        if user['role'] == 'admin':
+            with header_col2:
+                if st.button("➕", help="Add New Alliance"):
+                    st.session_state.show_add_alliance = True
+            
+            if st.session_state.get('show_add_alliance', False):
+                with st.container():
+                     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+                     st.subheader("Add New Alliance")
+                     col1, col2 = st.columns(2)
+                     with col1:
+                         new_name = st.text_input("Alliance Name")
+                         new_party = st.text_input("Primary Party")
+                         new_leader = st.text_input("Leader")
+                     with col2:
+                         new_symbol = st.text_input("Symbol (Emoji or URL)")
+                         new_seats = st.number_input("Seats Contested", min_value=0, step=1)
+                         new_desc = st.text_area("Description")
+                     
+                     if st.button("Save Alliance"):
+                         new_a = Alliance(
+                             name=new_name, 
+                             primary_party=new_party, 
+                             leader=new_leader, 
+                             symbol=new_symbol, 
+                             seats_contested=new_seats,
+                             description=new_desc
+                         )
+                         db.add(new_a)
+                         db.commit()
+                         st.success(f"Alliance {new_name} saved!")
+                         st.session_state.show_add_alliance = False
+                         st.rerun()
+                     if st.button("Cancel"):
+                         st.session_state.show_add_alliance = False
+                         st.rerun()
+                     st.markdown('</div>', unsafe_allow_html=True)
+
+        # Filter
+        all_alliances = db.query(Alliance).all()
+        alliance_names = ["All"] + [a.name for a in all_alliances]
+        selected_alliance = st.selectbox("Filter by Alliance Name", alliance_names)
+        
+        # Listing
+        query = db.query(Alliance)
+        if selected_alliance != "All":
+            query = query.filter(Alliance.name == selected_alliance)
+        
+        display_alliances = query.all()
+        
+        for alliance in display_alliances:
+            with st.expander(f"{alliance.symbol if alliance.symbol else '🤝'} {alliance.name}", expanded=True):
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.write(f"**Primary Party:** {alliance.primary_party}")
+                    st.write(f"**Leader:** {alliance.leader}")
+                with col2:
+                    st.write(f"**Seats Contested:** {alliance.seats_contested}")
+                    st.write(f"**Symbol:** {alliance.symbol}")
+                with col3:
+                    st.write(f"**Description:** {alliance.description}")
+                
+                # Show member parties
                 parties = db.query(Party).filter(Party.alliance_id == alliance.id).all()
                 if parties:
-                    st.write("---")
+                    st.divider()
                     st.subheader("Member Parties")
                     p_cols = st.columns(3)
                     for idx, party in enumerate(parties):
                         with p_cols[idx % 3]:
                             st.info(party.name)
-                else:
-                    st.write("No member parties registered.")
 
     elif choice == "Candidates":
         st.title("👤 Candidate Profiles")
@@ -239,15 +268,10 @@ else:
         db = next(get_db())
         
         with admin_tab[0]:
-            st.subheader("Add New Alliance")
-            a_name = st.text_input("Alliance Name")
-            a_desc = st.text_area("Description")
-            if st.button("Add Alliance"):
-                new_a = Alliance(name=a_name, description=a_desc)
-                db.add(new_a)
-                db.commit()
-                st.success(f"Alliance {a_name} added!")
-                st.rerun()
+            st.info("Alliance management has been moved to the 'Alliances' menu for better accessibility.")
+            if st.button("Go to Alliances Menu"):
+                # This is just a hint, Streamlit doesn't easily switch sidebar choice from here without complexity
+                st.write("Please select 'Alliances' from the sidebar.")
                 
         with admin_tab[1]:
             st.subheader("Add New Party")
