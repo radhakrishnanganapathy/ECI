@@ -122,6 +122,7 @@ else:
     # Navigation
     menu = ["Dashboard", "Alliances", "Candidates", "Election Stats"]
     if user['role'] == 'admin':
+        menu.insert(3, "Manage Candidates")
         menu.append("Admin Panel")
         
     choice = st.sidebar.selectbox("Navigate", menu)
@@ -234,12 +235,22 @@ else:
     elif choice == "Candidates":
         st.title("👤 Candidate Profiles")
         db = next(get_db())
-        party_filter = st.selectbox("Filter by Party", ["All"] + [p.name for p in db.query(Party).all()])
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            party_filter = st.selectbox("Filter by Party", ["All"] + [p.name for p in db.query(Party).all()])
+        with col2:
+            all_constituencies = sorted(list(set([c.constituency for c in db.query(Candidate).all() if c.constituency])))
+            const_filter = st.selectbox("Filter by Constituency", ["All"] + all_constituencies)
         
         query = db.query(Candidate)
         if party_filter != "All":
             party = db.query(Party).filter(Party.name == party_filter).first()
-            query = query.filter(Candidate.party_id == party.id)
+            if party:
+                query = query.filter(Candidate.party_id == party.id)
+        
+        if const_filter != "All":
+            query = query.filter(Candidate.constituency == const_filter)
             
         candidates = query.all()
         
@@ -247,30 +258,102 @@ else:
             st.info("No candidates found.")
         else:
             for cand in candidates:
-                col1, col2 = st.columns([1, 4])
-                with col1:
-                    if cand.image_url:
-                        st.image(cand.image_url, width=150)
-                    else:
-                        st.markdown("👤")
-                with col2:
-                    st.markdown(f"### {cand.name}")
-                    st.write(f"**Party:** {cand.party.name}")
-                    st.write(f"**Constituency:** {cand.constituency}")
-                    st.write(cand.bio)
-                st.divider()
+                with st.container():
+                    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+                    col1, col2, col3 = st.columns([1, 3, 1])
+                    with col1:
+                        if cand.image_url and os.path.exists(cand.image_url):
+                            st.image(cand.image_url, width=150)
+                        else:
+                            st.markdown("### 👤")
+                    with col2:
+                        st.markdown(f"### {cand.name}")
+                        st.write(f"**Party:** {cand.party.name if cand.party else 'N/A'}")
+                        if cand.alliance:
+                            st.write(f"**Alliance:** {cand.alliance.name}")
+                        st.write(f"**Constituency:** {cand.constituency} ({cand.district if cand.district else 'N/A'})")
+                        if cand.age:
+                            st.write(f"**Age:** {cand.age}")
+                        st.write(cand.bio)
+                    with col3:
+                        if cand.symbol_image_url and os.path.exists(cand.symbol_image_url):
+                            st.image(cand.symbol_image_url, width=80)
+                            st.caption(cand.symbol_name)
+                        elif cand.symbol_name:
+                            st.markdown(f"**Symbol:** {cand.symbol_name}")
+                    st.markdown('</div>', unsafe_allow_html=True)
+                st.write("")
+
+    elif choice == "Manage Candidates" and user['role'] == 'admin':
+        st.title("👤 Manage Candidates")
+        db = next(get_db())
+        
+        # Reuse the add candidate form logic or move it here
+        st.subheader("Add New Candidate")
+        with st.form("add_candidate_form_dedicated", clear_on_submit=True):
+            col1, col2 = st.columns(2)
+            with col1:
+                c_name = st.text_input("Candidate Name*")
+                c_age = st.number_input("Age (Optional)", min_value=18, max_value=120, value=None)
+                parties = db.query(Party).all()
+                c_party = st.selectbox("Select Party*", [p.name for p in parties])
+                alliances = db.query(Alliance).all()
+                c_alliance = st.selectbox("Select Alliance (Optional)", ["None"] + [a.name for a in alliances])
+            
+            with col2:
+                c_const = st.text_input("Constituency*")
+                c_dist = st.text_input("District*")
+                c_sym_name = st.text_input("Symbol Name")
+                c_sym_img = st.file_uploader("Upload Symbol Image", type=["png", "jpg", "jpeg"])
+            
+            c_bio = st.text_area("Bio (Background)")
+            c_img = st.file_uploader("Upload Candidate Photo", type=["png", "jpg", "jpeg"])
+            
+            submitted = st.form_submit_button("Add Candidate")
+            
+            if submitted:
+                if not c_name or not c_party or not c_const or not c_dist:
+                    st.error("Please fill in all required fields (*)")
+                else:
+                    p_obj = db.query(Party).filter(Party.name == c_party).first()
+                    a_obj = None
+                    if c_alliance != "None":
+                        a_obj = db.query(Alliance).filter(Alliance.name == c_alliance).first()
+                    
+                    sym_img_path = None
+                    if c_sym_img:
+                        if not os.path.exists("images"): os.makedirs("images")
+                        sym_img_path = f"images/symbol_{c_sym_img.name}"
+                        with open(sym_img_path, "wb") as f: f.write(c_sym_img.getbuffer())
+                    
+                    cand_img_path = None
+                    if c_img:
+                        if not os.path.exists("images"): os.makedirs("images")
+                        cand_img_path = f"images/candidate_{c_img.name}"
+                        with open(cand_img_path, "wb") as f: f.write(c_img.getbuffer())
+                    
+                    new_c = Candidate(
+                        name=c_name, age=c_age, party_id=p_obj.id, 
+                        alliance_id=a_obj.id if a_obj else None,
+                        constituency=c_const, district=c_dist,
+                        symbol_name=c_sym_name, symbol_image_url=sym_img_path,
+                        bio=c_bio, image_url=cand_img_path
+                    )
+                    db.add(new_c)
+                    db.commit()
+                    st.success(f"Candidate {c_name} added successfully!")
+                    st.rerun()
 
     elif choice == "Admin Panel" and user['role'] == 'admin':
         st.title("🛠️ Administration Control")
         
-        admin_tab = st.tabs(["Manage Alliances", "Manage Parties", "Manage Candidates"])
+        admin_tab = st.tabs(["Manage Alliances", "Manage Parties"])
         
         db = next(get_db())
         
         with admin_tab[0]:
             st.info("Alliance management has been moved to the 'Alliances' menu for better accessibility.")
             if st.button("Go to Alliances Menu"):
-                # This is just a hint, Streamlit doesn't easily switch sidebar choice from here without complexity
                 st.write("Please select 'Alliances' from the sidebar.")
                 
         with admin_tab[1]:
@@ -285,19 +368,4 @@ else:
                 db.add(new_p)
                 db.commit()
                 st.success(f"Party {p_name} added!")
-                st.rerun()
-
-        with admin_tab[2]:
-            st.subheader("Add New Candidate")
-            c_name = st.text_input("Candidate Name")
-            parties = db.query(Party).all()
-            c_party = st.selectbox("Select Party", [p.name for p in parties])
-            c_const = st.text_input("Constituency")
-            c_bio = st.text_area("Bio")
-            if st.button("Add Candidate"):
-                p_obj = db.query(Party).filter(Party.name == c_party).first()
-                new_c = Candidate(name=c_name, party_id=p_obj.id, constituency=c_const, bio=c_bio)
-                db.add(new_c)
-                db.commit()
-                st.success(f"Candidate {c_name} added!")
                 st.rerun()

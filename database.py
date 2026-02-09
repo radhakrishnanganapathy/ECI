@@ -54,11 +54,18 @@ class Candidate(Base):
     __tablename__ = "candidates"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)
+    age = Column(Integer, nullable=True)
     party_id = Column(Integer, ForeignKey("parties.id"))
+    alliance_id = Column(Integer, ForeignKey("alliances.id"), nullable=True)
     constituency = Column(String)
+    district = Column(String)
+    symbol_name = Column(String)
+    symbol_image_url = Column(String)
     bio = Column(Text)
     image_url = Column(String)
+    
     party = relationship("Party", back_populates="candidates")
+    alliance = relationship("Alliance")
     stats = relationship("ElectionStat", back_populates="candidate")
 
 class ElectionStat(Base):
