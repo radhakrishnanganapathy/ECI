@@ -68,6 +68,7 @@ class Party(Base):
     description = Column(Text)
     description_ta = Column(Text)
     logo_url = Column(String)
+    category = Column(String) # National, State, Unrecognized
     created_at = Column(String)
     alliance = relationship("Alliance", back_populates="parties")
     candidates = relationship("Candidate", back_populates="party")

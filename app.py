@@ -115,6 +115,7 @@ LANGUAGES = {
         "state": "State",
         "tn": "Tamil Nadu",
         "py": "Pondicherry",
+        "ind": "India",
         "total_voters": "Total Voters",
         "male": "Male",
         "female": "Female",
@@ -134,7 +135,8 @@ LANGUAGES = {
         "voted_successfully": "Voted successfully!",
         "already_voted": "You have already voted from this device.",
         "candidate_growth": "Recent Candidate Growth",
-        "cumulative_candidates": "Cumulative Candidates"
+        "cumulative_candidates": "Cumulative Candidates",
+        "category": "Category"
     },
     "Tamil": {
         "dashboard": "🚀 தேர்தல் டேஷ்போர்டு",
@@ -181,6 +183,7 @@ LANGUAGES = {
         "state": "மாநிலம்",
         "tn": "தமிழ்நாடு",
         "py": "புதுச்சேரி",
+        "ind": "இந்தியா",
         "total_voters": "மொத்த வாக்காளர்கள்",
         "male": "ஆண்",
         "female": "பெண்",
@@ -200,8 +203,9 @@ LANGUAGES = {
         "voted_successfully": "வெற்றிகரமாக வாக்களிக்கப்பட்டது!",
         "already_voted": "இந்த சாதனத்திலிருந்து நீங்கள் ஏற்கனவே வாக்களித்துவிட்டீர்கள்.",
         "candidate_growth": "சமீபத்திய வேட்பாளர் வளர்ச்சி",
-        "cumulative_candidates": "மொத்த வேட்பாளர்கள்"
-    }    ,
+        "cumulative_candidates": "மொத்த வேட்பாளர்கள்",
+        "category": "வகை"
+    },
 }
 
 if 'lang' not in st.session_state:
@@ -770,10 +774,11 @@ elif choice == t("parties"):
                         new_p_leader_ta = st.text_input(f"{t('leader')} (TA)*")
                         new_p_sym_name = st.text_input(f"{t('symbol')} (EN)*")
                         new_p_sym_name_ta = st.text_input(f"{t('symbol')} (TA)*")
+                        new_p_category = st.selectbox(f"{t('category')}*", ["National", "State", "Unrecognized"])
                     
-                    state_options = [t("tn"), t("py")]
+                    state_options = [t("tn"), t("py"), t("ind")]
                     new_p_states = st.multiselect(t("state"), state_options)
-                    new_p_sym_img = st.file_uploader(f"Upload {t('symbol')} Image*", type=["png", "jpg", "jpeg"])
+                    new_p_sym_img = st.file_uploader(f"Upload {t('symbol')} Image", type=["png", "jpg", "jpeg"])
                     new_p_desc = st.text_area(f"{t('description')} (EN)")
                     new_p_desc_ta = st.text_area(f"{t('description')} (TA)")
                     
@@ -800,6 +805,7 @@ elif choice == t("parties"):
                             for s in new_p_states:
                                 if s == t("tn"): db_states.append("Tamil Nadu")
                                 elif s == t("py"): db_states.append("Pondicherry")
+                                elif s == t("ind"): db_states.append("India")
                             
                             new_p = Party(
                                 name=new_p_name, name_ta=new_p_name_ta,
@@ -809,6 +815,7 @@ elif choice == t("parties"):
                                 symbol_image_url=sym_img_path,
                                 state=",".join(db_states),
                                 description=new_p_desc, description_ta=new_p_desc_ta,
+                                category=new_p_category,
                                 created_at=datetime.now().isoformat()
                             )
                             db.add(new_p)
@@ -857,6 +864,8 @@ elif choice == t("parties"):
                             st.markdown(f"### {display_name}")
                             st.write(f"**{t('leader')}:** {get_val(party, 'leader')}")
                             st.write(f"**{t('symbol')}:** {get_val(party, 'symbol_name')}")
+                            if party.category:
+                                st.write(f"**{t('category')}:** {party.category}")
                             if party.state:
                                 # Show states with Tamil translation if applicable
                                 state_list = party.state.split(",")
@@ -881,6 +890,8 @@ elif choice == t("parties"):
                     display_name = f"{get_val(party, 'name')} ({get_val(party, 'full_name')})"
                     st.markdown(f"### {display_name}")
                     st.write(f"**{t('leader')}:** {get_val(party, 'leader')} | **{t('symbol')}:** {get_val(party, 'symbol_name')}")
+                    if party.category:
+                        st.write(f"**{t('category')}:** {party.category}")
                     if party.state:
                         state_list = party.state.split(",")
                         disp_states = []
@@ -922,6 +933,12 @@ elif choice == t("parties"):
                     upd_leader_ta = st.text_input(f"{t('leader')} (TA)", value=edit_party.leader_ta if edit_party.leader_ta else "")
                     upd_sym_name = st.text_input(f"{t('symbol')} (EN)", value=edit_party.symbol_name if edit_party.symbol_name else "")
                     upd_sym_name_ta = st.text_input(f"{t('symbol')} (TA)", value=edit_party.symbol_name_ta if edit_party.symbol_name_ta else "")
+                    
+                    cat_opts = ["National", "State", "Unrecognized"]
+                    cat_idx = 0
+                    if edit_party.category in cat_opts:
+                        cat_idx = cat_opts.index(edit_party.category)
+                    upd_category = st.selectbox(f"{t('category')}", cat_opts, index=cat_idx)
                 
                 state_options = [t("tn"), t("py")]
                 current_states = []
@@ -946,6 +963,7 @@ elif choice == t("parties"):
                         edit_party.leader_ta = upd_leader_ta
                         edit_party.symbol_name = upd_sym_name
                         edit_party.symbol_name_ta = upd_sym_name_ta
+                        edit_party.category = upd_category
                         edit_party.description = upd_desc
                         edit_party.description_ta = upd_desc_ta
                         
