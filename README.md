@@ -40,5 +40,5 @@ python update_role.py <username> admin
 ```
 
 ## Default Admin Credentials
-- **Username**: `admin`
-- **Password**: `admin123`
+- **Username**: `radhakrishnan`
+- **Password**: `Admin123`

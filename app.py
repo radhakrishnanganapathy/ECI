@@ -136,7 +136,8 @@ LANGUAGES = {
         "already_voted": "You have already voted from this device.",
         "candidate_growth": "Recent Candidate Growth",
         "cumulative_candidates": "Cumulative Candidates",
-        "category": "Category"
+        "category": "Category",
+        "contestants": "🏆 Contestants"
     },
     "Tamil": {
         "dashboard": "🚀 தேர்தல் டேஷ்போர்டு",
@@ -204,7 +205,8 @@ LANGUAGES = {
         "already_voted": "இந்த சாதனத்திலிருந்து நீங்கள் ஏற்கனவே வாக்களித்துவிட்டீர்கள்.",
         "candidate_growth": "சமீபத்திய வேட்பாளர் வளர்ச்சி",
         "cumulative_candidates": "மொத்த வேட்பாளர்கள்",
-        "category": "வகை"
+        "category": "வகை",
+        "contestants": "🏆 போட்டியாளர்கள்"
     },
 }
 
@@ -272,7 +274,7 @@ else:
 st.sidebar.divider()
 
 # Navigation
-menu_options = [t("dashboard"), t("alliances"), t("parties"), t("constituencies"), t("candidates"), t("election_stats")]
+menu_options = [t("dashboard"), t("alliances"), t("parties"), t("constituencies"), t("candidates"), t("election_stats"), t("contestants")]
 if user and user['role'] == 'admin':
     menu_options.append(t("opinion_poll"))
     menu_options.append(t("admin_panel"))
@@ -1428,6 +1430,87 @@ elif choice == t("election_stats"):
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
     st.info("Comprehensive election statistics and historical comparisons will be available here soon.")
     st.markdown('</div>', unsafe_allow_html=True)
+
+elif choice == t("contestants"):
+    st.title(t("contestants"))
+    
+    import json
+    if os.path.exists("eci_candidates.json"):
+        with open("eci_candidates.json", "r", encoding='utf-8') as f:
+            candidates_data = json.load(f)
+        
+        df = pd.DataFrame(candidates_data)
+        
+        # Ensure correct types for filtering
+        df['years'] = df['years'].astype(str)
+        
+        # Filters
+        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+        col1, col2, col3, col4, col5 = st.columns(5)
+        with col1:
+            parties = ["All"] + sorted(df['party'].unique().tolist())
+            selected_party = st.selectbox("Party", parties)
+        with col2:
+            states = ["All"] + sorted(df['state'].unique().tolist())
+            selected_state = st.selectbox("State", states)
+        with col3:
+            constituencies = ["All"] + sorted(df['constituency'].unique().tolist())
+            selected_const = st.selectbox("Constituency", constituencies)
+        with col4:
+            years = ["All"] + sorted(df['years'].unique().tolist())
+            selected_year = st.selectbox("Year", years)
+        with col5:
+            elections = ["All"] + sorted(df['Election'].unique().tolist())
+            selected_election = st.selectbox("Election", elections)
+        st.markdown('</div>', unsafe_allow_html=True)
+            
+        # Apply filters
+        filtered_df = df.copy()
+        if selected_party != "All":
+            filtered_df = filtered_df[filtered_df['party'] == selected_party]
+        if selected_state != "All":
+            filtered_df = filtered_df[filtered_df['state'] == selected_state]
+        if selected_const != "All":
+            filtered_df = filtered_df[filtered_df['constituency'] == selected_const]
+        if selected_year != "All":
+            filtered_df = filtered_df[filtered_df['years'] == selected_year]
+        if selected_election != "All":
+            filtered_df = filtered_df[filtered_df['Election'] == selected_election]
+            
+        # Display
+        if filtered_df.empty:
+            st.info("No candidates found with the selected filters.")
+        else:
+            # Stats for filtered data
+            st.write(f"Showing {len(filtered_df)} candidates")
+            
+            # Table Header
+            st.markdown(f"""
+            <div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 5px; font-weight: bold; display: flex; align-items: center; margin-bottom: 5px;">
+                <div style="width: 25%;">Candidate Name</div>
+                <div style="width: 20%;">Party</div>
+                <div style="width: 15%;">State</div>
+                <div style="width: 20%;">Constituency</div>
+                <div style="width: 20%; text-align: center;">Actions</div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Simple list/table display
+            for index, row in filtered_df.iterrows():
+                cols = st.columns([2.5, 2, 1.5, 2, 2])
+                with cols[0]: st.markdown(f"**{row['name']}**")
+                with cols[1]: st.write(row['party'])
+                with cols[2]: st.write(row['state'])
+                with cols[3]: st.write(row['constituency'])
+                with cols[4]:
+                    if row['view_more_link'] != "N/A":
+                        st.markdown(f'''<a href="{row['view_more_link']}" target="_blank" style="text-decoration: none;">
+                            <button style="background: linear-gradient(45deg, #00d4ff, #0055ff); color: white; border: none; border-radius: 5px; padding: 6px 12px; cursor: pointer; width: 100%; font-weight: bold;">View More</button>
+                        </a>''', unsafe_allow_html=True)
+                    else:
+                        st.write("N/A")
+    else:
+        st.error("Data file eci_candidates.json not found. Please run the scraper first.")
 
 elif choice == t("opinion_poll") and user and user['role'] == 'admin':
     header_col1, header_col2 = st.columns([5, 1])

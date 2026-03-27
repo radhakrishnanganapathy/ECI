@@ -10,4 +10,5 @@ streamlit
 psycopg2-binary
 sqlalchemy
 passlib
-pyarrow
+playwright
+pandas
