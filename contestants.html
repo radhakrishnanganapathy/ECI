@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ECI - Contestants Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-bg: #0e1117;
+            --secondary-bg: #161b22;
+            --accent-color: #00d4ff;
+            --accent-gradient: linear-gradient(45deg, #00d4ff, #0055ff);
+            --text-color: #ffffff;
+            --text-muted: #8b949e;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            display: flex;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Sidebar Navigation */
+        .sidebar {
+            width: 260px;
+            background-color: var(--secondary-bg);
+            border-right: 1px solid var(--glass-border);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            height: 100vh;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--accent-color);
+            margin-bottom: 40px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .menu-item {
+            padding: 12px 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: 0.3s;
+            cursor: pointer;
+        }
+
+        .menu-item:hover, .menu-item.active {
+            background: var(--glass-bg);
+            color: var(--text-color);
+        }
+
+        .menu-item.active {
+            border-left: 4px solid var(--accent-color);
+        }
+
+        .menu-item i {
+            width: 20px;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 260px;
+            flex: 1;
+            padding: 40px;
+            max-width: calc(100% - 260px);
+        }
+
+        header {
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 32px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        /* Filters Section */
+        .filters-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 20px;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .filter-group label {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .filter-group select, .filter-group input {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--glass-border);
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            outline: none;
+        }
+
+        /* Table Container */
+        .table-container {
+            background: var(--secondary-bg);
+            border-radius: 15px;
+            overflow: hidden;
+            border: 1px solid var(--glass-border);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        thead {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        th {
+            padding: 15px 20px;
+            font-weight: 600;
+            color: var(--accent-color);
+            text-transform: uppercase;
+            font-size: 13px;
+            letter-spacing: 1px;
+        }
+
+        td {
+            padding: 18px 20px;
+            border-bottom: 1px solid var(--glass-border);
+            vertical-align: middle;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .candidate-name {
+            font-weight: 600;
+            display: block;
+        }
+
+        .meta-info {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .party-badge {
+            background: rgba(0, 212, 255, 0.1);
+            color: var(--accent-color);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 13px;
+        }
+
+        .btn-view {
+            background: var(--accent-gradient);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+            transition: 0.3s;
+            display: inline-block;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-view:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 212, 255, 0.4);
+        }
+
+        /* Status Indicator */
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .status-accepted { background: #00ff88; box-shadow: 0 0 10px #00ff88; }
+        .status-rejected { background: #ff4444; box-shadow: 0 0 10px #ff4444; }
+
+        /* Animation */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease forward;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--primary-bg); }
+        ::-webkit-scrollbar-thumb { background: var(--secondary-bg); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #30363d; }
+
+        @media (max-width: 900px) {
+            .sidebar { width: 70px; padding: 15px 5px; }
+            .logo span, .menu-item span { display: none; }
+            .menu-item i { margin: 0 auto; }
+            .main-content { margin-left: 70px; max-width: calc(100% - 70px); padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <nav class="sidebar">
+        <div class="logo">
+            <i class="fas fa-vote-yea"></i>
+            <span>ECI STATS</span>
+        </div>
+        
+        <a class="menu-item"><i class="fas fa-chart-line"></i> <span>Dashboard</span></a>
+        <a class="menu-item"><i class="fas fa-users"></i> <span>Alliances</span></a>
+        <a class="menu-item"><i class="fas fa-flag"></i> <span>Parties</span></a>
+        <a class="menu-item active"><i class="fas fa-trophy"></i> <span>Contestants</span></a>
+        <a class="menu-item"><i class="fas fa-poll"></i> <span>Opinion Poll</span></a>
+        <a class="menu-item"><i class="fas fa-user-shield"></i> <span>Admin Panel</span></a>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <header>
+            <h1>🏆 Contestants List</h1>
+            <p style="color: var(--text-muted);">Real-time candidate data from election portal</p>
+        </header>
+
+        <!-- Filters -->
+        <div class="filters-panel">
+            <div class="filter-group">
+                <label>Party</label>
+                <select id="filter-party">
+                    <option value="All">All Parties</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>State</label>
+                <select id="filter-state">
+                    <option value="All">All States</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Constituency</label>
+                <select id="filter-const">
+                    <option value="All">All Constituencies</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Year</label>
+                <select id="filter-year">
+                    <option value="All">All Years</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Election</label>
+                <select id="filter-election">
+                    <option value="All">All Elections</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="table-container">
+            <table id="candidates-table">
+                <thead>
+                    <tr>
+                        <th>Candidate</th>
+                        <th>Party</th>
+                        <th>State</th>
+                        <th>Constituency</th>
+                        <th>Status</th>
+                        <th style="text-align: center;">Profile</th>
+                    </tr>
+                </thead>
+                <tbody id="candidates-body">
+                    <!-- Data will be loaded here -->
+                </tbody>
+            </table>
+        </div>
+        
+        <div id="stats" style="margin-top: 20px; color: var(--text-muted); font-size: 14px;">
+            Showing <span id="count">0</span> candidates
+        </div>
+    </main>
+
+    <script>
+        let allCandidates = [];
+
+        async function loadData() {
+            try {
+                // In a real browser, this would be a fetch. 
+                // For this demonstration, we'll try to fetch the local file.
+                const response = await fetch('eci_candidates.json');
+                allCandidates = await response.json();
+                
+                populateFilters();
+                renderTable(allCandidates);
+                
+            } catch (error) {
+                console.error('Error loading JSON:', error);
+                document.getElementById('candidates-body').innerHTML = `
+                    <tr><td colspan="6" style="text-align:center; padding: 40px; color: #ff4444;">
+                        <i class="fas fa-exclamation-triangle"></i> Error loading eci_candidates.json. 
+                        Make sure the file exists and you are running via a local server.
+                    </td></tr>
+                `;
+            }
+        }
+
+        function populateFilters() {
+            const parties = [...new Set(allCandidates.map(c => c.party))].sort();
+            const states = [...new Set(allCandidates.map(c => c.state))].sort();
+            const consts = [...new Set(allCandidates.map(c => c.constituency))].sort();
+            const years = [...new Set(allCandidates.map(c => String(c.years)))].sort();
+            const elections = [...new Set(allCandidates.map(c => c.Election))].sort();
+
+            fillSelect('filter-party', parties);
+            fillSelect('filter-state', states);
+            fillSelect('filter-const', consts);
+            fillSelect('filter-year', years);
+            fillSelect('filter-election', elections);
+        }
+
+        function fillSelect(id, items) {
+            const select = document.getElementById(id);
+            items.forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = item;
+                opt.textContent = item;
+                select.appendChild(opt);
+            });
+        }
+
+        function renderTable(data) {
+            const body = document.getElementById('candidates-body');
+            body.innerHTML = '';
+            
+            data.forEach(c => {
+                const row = document.createElement('tr');
+                row.className = 'fade-in';
+                
+                const statusClass = c.status.toLowerCase().includes('accepted') ? 'status-accepted' : 'status-rejected';
+                
+                row.innerHTML = `
+                    <td>
+                        <span class="candidate-name">${c.name}</span>
+                        <div class="meta-info">${c.years} | ${c.Election}</div>
+                    </td>
+                    <td><span class="party-badge">${c.party}</span></td>
+                    <td>${c.state}</td>
+                    <td>${c.constituency}</td>
+                    <td>
+                        <div class="status">
+                            <span class="status-dot ${statusClass}"></span>
+                            ${c.status}
+                        </div>
+                    </td>
+                    <td style="text-align: center;">
+                        <a href="${c.view_more_link}" target="_blank" class="btn-view">View More</a>
+                    </td>
+                `;
+                body.appendChild(row);
+            });
+            
+            document.getElementById('count').textContent = data.length;
+        }
+
+        // Filtering logic
+        const filterIds = ['filter-party', 'filter-state', 'filter-const', 'filter-year', 'filter-election'];
+        filterIds.forEach(id => {
+            document.getElementById(id).addEventListener('change', () => {
+                const filters = {
+                    party: document.getElementById('filter-party').value,
+                    state: document.getElementById('filter-state').value,
+                    constituency: document.getElementById('filter-const').value,
+                    years: document.getElementById('filter-year').value,
+                    Election: document.getElementById('filter-election').value
+                };
+
+                const filtered = allCandidates.filter(c => {
+                    return (filters.party === 'All' || c.party === filters.party) &&
+                           (filters.state === 'All' || c.state === filters.state) &&
+                           (filters.constituency === 'All' || c.constituency === filters.constituency) &&
+                           (filters.years === 'All' || String(c.years) === filters.years) &&
+                           (filters.Election === 'All' || c.Election === filters.Election);
+                });
+
+                renderTable(filtered);
+            });
+        });
+
+        loadData();
+    </script>
+</body>
+</html>
